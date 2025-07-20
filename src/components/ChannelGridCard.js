@@ -72,7 +72,7 @@ const ChannelGridCard = ({ channel, onFilterChannel }) => {
 
 const styles = StyleSheet.create({
   card: {
-    width: width / 2 - 25, // 考慮到左右 padding 和中間間距
+    width: width - 30, // 佔滿全寬，減去 HomeScreen 的 padding
     backgroundColor: '#1f2937', // gray-800
     borderRadius: 8,
     overflow: 'hidden',

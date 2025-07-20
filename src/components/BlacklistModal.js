@@ -207,7 +207,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden', // Ensures borderRadius is applied to children
   },
   picker: {
-    height: 50, // Adjust height as needed
     color: '#fff', // Text color for selected item
   },
   pickerItem: {

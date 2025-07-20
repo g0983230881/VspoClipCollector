@@ -30,7 +30,7 @@ const App = () => {
             name="Home"
             component={HomeScreen}
             options={{
-              title: 'れなち的VSPO中文精華收集處',
+              title: 'VSPO中文精華收集處',
             }}
           />
           {/* 其他畫面將在後續步驟中添加 */}

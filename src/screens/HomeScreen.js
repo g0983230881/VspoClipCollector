@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   Dimensions,
   Linking,
   Alert,
+  Modal,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchAllDataFromProxy } from '../api/youtubeApi';
@@ -45,6 +47,9 @@ const HomeScreen = () => {
 
   const [isBlacklistModalVisible, setIsBlacklistModalVisible] = useState(false); // 新增黑名單模態框狀態
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false); // 新增更新模態框狀態
+  const [isFilterMenuVisible, setIsFilterMenuVisible] = useState(false);
+  const [filterMenuPosition, setFilterMenuPosition] = useState({ top: 0, left: 0 });
+  const filterButtonRef = useRef(null);
 
   const initializeApp = useCallback(async (force = false, password = '', mode = 'normal') => {
     setState(prevState => ({ ...prevState, isLoading: true, apiError: null }));
@@ -157,16 +162,17 @@ const HomeScreen = () => {
   return (
     <>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView style={styles.scrollView}>
+        <ScrollView style={styles.scrollView} stickyHeaderIndices={[1]}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => setSecretTrigger(prev => prev + 'r')}>
-              <Text style={styles.title}>
-                れなち的VSPO中文精華收集處
+              <View style={styles.titleContainer}>
+                <Text style={styles.title}>
+                  れなち's{'\n'}VSPO中文精華收集處
+                </Text>
                 <Text style={styles.versionText}>{CURRENT_APP_VERSION}</Text>
-              </Text>
+              </View>
             </TouchableOpacity>
           </View>
-
           <View style={styles.topBar}>
             <View style={styles.topBarStats}>
               <Text style={styles.statText}>👀 總人次: <Text style={styles.statValue}>{formatNumber(state.totalVisits)}</Text></Text>
@@ -196,7 +202,6 @@ const HomeScreen = () => {
               </TouchableOpacity>
             </View>
           </View>
-
           <View style={styles.mainContent}>
             {/* 成員篩選區塊 */}
             <View style={styles.filterSection}>
@@ -281,24 +286,22 @@ const HomeScreen = () => {
                   <View style={styles.videosHeader}>
                     <Text style={styles.videosTitle}>精華影片</Text>
                     <View style={styles.filterControls}>
-                      <View style={styles.typeFilterButtons}>
+                      {/* Dropdown-like filter */}
+                      <View style={styles.typeFilterContainer}>
                         <TouchableOpacity
-                          style={[styles.typeFilterBtn, state.activeVideoTypeFilter === 'all' && styles.typeFilterBtnActive]}
-                          onPress={() => setState(prevState => ({ ...prevState, activeVideoTypeFilter: 'all', currentPage: 1 }))}
+                          ref={filterButtonRef}
+                          style={styles.typeFilterDropdownButton}
+                          onPress={() => {
+                            filterButtonRef.current.measure((fx, fy, width, height, px, py) => {
+                              setFilterMenuPosition({ top: py + height, left: px });
+                              setIsFilterMenuVisible(true);
+                            });
+                          }}
                         >
-                          <Text style={styles.typeFilterBtnText}>全部</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.typeFilterBtn, state.activeVideoTypeFilter === 'video' && styles.typeFilterBtnActive]}
-                          onPress={() => setState(prevState => ({ ...prevState, activeVideoTypeFilter: 'video', currentPage: 1 }))}
-                        >
-                          <Text style={styles.typeFilterBtnText}>只看影片</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.typeFilterBtn, state.activeVideoTypeFilter === 'short' && styles.typeFilterBtnActive]}
-                          onPress={() => setState(prevState => ({ ...prevState, activeVideoTypeFilter: 'short', currentPage: 1 }))}
-                        >
-                          <Text style={styles.typeFilterBtnText}>只看Shorts</Text>
+                          <Text style={styles.typeFilterDropdownButtonText}>
+                            {state.activeVideoTypeFilter === 'all' ? '全部' : state.activeVideoTypeFilter === 'video' ? '只看影片' : '只看Shorts'}
+                          </Text>
+                          <Text style={styles.dropdownArrow}>▼</Text>
                         </TouchableOpacity>
                       </View>
                       <View style={styles.tabButtons}>
@@ -370,6 +373,49 @@ const HomeScreen = () => {
         isVisible={isUpdateModalVisible}
         onClose={() => setIsUpdateModalVisible(false)}
       />
+
+      <Modal
+        transparent={true}
+        visible={isFilterMenuVisible}
+        animationType="fade"
+        onRequestClose={() => setIsFilterMenuVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setIsFilterMenuVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={[styles.dropdownMenu, { top: filterMenuPosition.top, left: filterMenuPosition.left }]}>
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                setState(prevState => ({ ...prevState, activeVideoTypeFilter: 'all', currentPage: 1 }));
+                setIsFilterMenuVisible(false);
+              }}
+            >
+              <Text style={styles.dropdownItemText}>全部</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                setState(prevState => ({ ...prevState, activeVideoTypeFilter: 'video', currentPage: 1 }));
+                setIsFilterMenuVisible(false);
+              }}
+            >
+              <Text style={styles.dropdownItemText}>只看影片</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                setState(prevState => ({ ...prevState, activeVideoTypeFilter: 'short', currentPage: 1 }));
+                setIsFilterMenuVisible(false);
+              }}
+            >
+              <Text style={styles.dropdownItemText}>只看Shorts</Text>
+            </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </>
   );
 };
@@ -383,23 +429,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    alignItems: 'center',
     paddingTop: 30,
     marginBottom: 20,
+  },
+  titleContainer: {
+    alignItems: 'center',
   },
   title: {
     fontSize: 30,
     fontWeight: 'bold',
     color: '#06b6d4', // cyan-400
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    flexWrap: 'wrap',
-    paddingHorizontal: 15,
+    textAlign: 'center',
+    lineHeight: 40,
   },
   versionText: {
     fontSize: 16,
     color: '#6b7280', // gray-500
-    marginLeft: 10,
+    marginTop: 5,
   },
   topBar: {
     backgroundColor: 'rgba(17, 24, 39, 0.8)', // gray-900/80
@@ -555,43 +601,71 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   videosHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
     marginBottom: 20,
   },
   videosTitle: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: '#FFFFFF',
     borderLeftWidth: 4,
     borderLeftColor: '#06b6d4', // cyan-400
     paddingLeft: 15,
   },
   filterControls: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-  },
-  typeFilterButtons: {
     flexDirection: 'row',
-    marginBottom: 10,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 15,
+    width: '100%',
   },
-  typeFilterBtn: {
+  typeFilterContainer: {
+    position: 'relative',
+    marginRight: 10,
+  },
+  typeFilterDropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#374151', // gray-700
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 6,
-    backgroundColor: '#374151', // gray-700
-    marginRight: 10,
   },
-  typeFilterBtnActive: {
-    backgroundColor: '#0d9488', // teal-600
-  },
-  typeFilterBtnText: {
+  typeFilterDropdownButtonText: {
     color: '#d1d5db', // gray-300
     fontWeight: 'bold',
+    marginRight: 5,
+  },
+  dropdownArrow: {
+    color: '#d1d5db',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    backgroundColor: '#1f2937', // gray-800
+    borderRadius: 6,
+    padding: 10,
+    width: 150,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  dropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+  },
+  dropdownItemText: {
+    color: '#d1d5db', // gray-300
+    fontSize: 16,
   },
   tabButtons: {
     flexDirection: 'row',
-    alignSelf: 'flex-start',
   },
   tabBtn: {
     paddingVertical: 8,
@@ -621,6 +695,7 @@ const styles = StyleSheet.create({
   channelTitle: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: '#FFFFFF',
     borderLeftWidth: 4,
     borderLeftColor: '#a855f7', // purple-400
     paddingLeft: 15,

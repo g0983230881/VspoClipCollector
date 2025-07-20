@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   cardShorts: {
-    width: width / 3 - 20, // 調整寬度以容納更多卡片
+    width: width / 2 - 25, // 調整寬度以符合兩欄式佈局
   },
   thumbnailContainer: {
     width: '100%',

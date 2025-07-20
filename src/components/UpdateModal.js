@@ -229,7 +229,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   closeButton: {
-    marginTop: 20,
     backgroundColor: '#4b5563', // gray-600
     paddingVertical: 12,
     borderRadius: 8,
