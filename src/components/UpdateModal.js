@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Linking, Clipboard, Alert } from 'react-native';
 
-const CURRENT_APP_VERSION = 'V8.0'; // 應用程式當前版本
+const CURRENT_APP_VERSION = 'V9.0'; // 應用程式當前版本
 
 const UpdateModal = ({ isVisible, onClose }) => {
   const [updateStatus, setUpdateStatus] = useState('checking'); // 'checking', 'latest', 'new_version', 'failed'

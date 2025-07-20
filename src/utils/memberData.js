@@ -25,24 +25,22 @@ export const vspoJPMembers = [
 ];
 
 export const otherMemberGroups = {
-  "VSPO! EN": [
-    {"name_jp": "Remia Aotsuki", "filter_keyword": "Remia", "color": "#398FB2", "forceWhiteText": true},
-    {"name_jp": "Arya Kuroha", "filter_keyword": "Arya", "color": "#000000", "forceWhiteText": true},
-    {"name_jp": "Jira Jisaki", "filter_keyword": "Jira", "color": "#606D3D", "forceWhiteText": true},
-    {"name_jp": "Narin Mikure", "filter_keyword": "Narin", "color": "#F3A6EF", "forceWhiteText": true},
-    {"name_jp": "Riko Solari", "filter_keyword": "Riko", "color": "#9373D7", "forceWhiteText": true}
-  ],
-  "VSPO! CN": [
-    {"name_jp": "小针彩", "filter_keyword": "小针彩", "color": "#FE688D", "forceWhiteText": true},
-    {"name_jp": "白咲露理", "filter_keyword": "白咲露理", "color": "#E9E5E6", "forceWhiteText": true},
-    {"name_jp": "帕妃", "filter_keyword": "帕妃", "color": "#9F0019", "forceWhiteText": true},
-    {"name_jp": "千郁郁", "filter_keyword": "千郁郁", "color": "#8986C0", "forceWhiteText": true}
-  ]
+    "VSPO! EN": [
+        {"name_jp": "Remia Aotsuki", "filter_keyword": "Remia", "color": "#398FB2", "forceWhiteText": true},
+        {"name_jp": "Arya Kuroha", "filter_keyword": "Arya", "color": "#000000", "forceWhiteText": true},
+        {"name_jp": "Jira Jisaki", "filter_keyword": "Jira", "color": "#606D3D", "forceWhiteText": true},
+        {"name_jp": "Narin Mikure", "filter_keyword": "Narin", "color": "#F3A6EF", "forceWhiteText": true},
+        {"name_jp": "Riko Solari", "filter_keyword": "Riko", "color": "#9373D7", "forceWhiteText": true}
+    ],
+    "VSPO! CN": [
+        {"name_jp": "小针彩", "filter_keyword": "小针彩", "color": "#FE688D", "forceWhiteText": true},
+        {"name_jp": "白咲露理", "filter_keyword": "白咲露理", "color": "#E9E5E6", "forceWhiteText": true},
+        {"name_jp": "帕妃", "filter_keyword": "帕妃", "color": "#9F0019", "forceWhiteText": true},
+        {"name_jp": "千郁郁", "filter_keyword": "千郁郁", "color": "#8986C0", "forceWhiteText": true}
+    ]
 };
 
-export const getAllMembers = () => {
-  return [...vspoJPMembers, ...Object.values(otherMemberGroups).flat()];
-};
+export const allMembers = [...vspoJPMembers, ...Object.values(otherMemberGroups).flat()];
 
 export const isColorLight = (hexColor) => {
   if (!hexColor) return false;

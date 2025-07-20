@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, Dimensions, Linking } 
 
 const { width } = Dimensions.get('window');
 
-const VideoCard = ({ video }) => {
+const VideoCard = ({ video, isShortsMode }) => {
   const formatNumber = (num) => {
     if (typeof num !== 'number') return 'N/A';
     if (num >= 10000) return `${(num / 10000).toFixed(1)}萬`;
@@ -19,26 +19,34 @@ const VideoCard = ({ video }) => {
     return "剛剛";
   };
 
+  const cardStyle = [styles.card, isShortsMode && styles.cardShorts];
+  const thumbnailContainerStyle = [styles.thumbnailContainer, isShortsMode && styles.thumbnailContainerShorts];
+  const infoContainerStyle = [styles.infoContainer, isShortsMode && styles.infoContainerShorts];
+  const titleStyle = [styles.title, isShortsMode && styles.titleShorts];
+  const channelAvatarStyle = [styles.channelAvatar, isShortsMode && styles.channelAvatarShorts];
+  const channelTitleStyle = [styles.channelTitle, isShortsMode && styles.channelTitleShorts];
+  const metaTextStyle = [styles.metaText, isShortsMode && styles.metaTextShorts];
+
   return (
-    <View style={styles.card}>
-      <TouchableOpacity onPress={() => Linking.openURL(`https://www.youtube.com/watch?v=${video.id}`)} style={styles.thumbnailContainer}>
+    <View style={cardStyle}>
+      <TouchableOpacity onPress={() => Linking.openURL(`https://www.youtube.com/watch?v=${video.id}`)} style={thumbnailContainerStyle}>
         <Image
           source={{ uri: video.thumbnail }}
           style={styles.thumbnail}
           onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
         />
       </TouchableOpacity>
-      <View style={styles.infoContainer}>
+      <View style={infoContainerStyle}>
         <TouchableOpacity onPress={() => Linking.openURL(`https://www.youtube.com/watch?v=${video.id}`)} style={styles.titleLink}>
-          <Text style={styles.title} numberOfLines={2}>{video.title}</Text>
+          <Text style={titleStyle} numberOfLines={2}>{video.title}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => Linking.openURL(`https://www.youtube.com/channel/${video.channelId}`)} style={styles.channelLink}>
-          <Image source={{ uri: video.channelAvatarUrl }} style={styles.channelAvatar} />
-          <Text style={styles.channelTitle} numberOfLines={1}>{video.channelTitle}</Text>
+          <Image source={{ uri: video.channelAvatarUrl }} style={channelAvatarStyle} />
+          <Text style={channelTitleStyle} numberOfLines={1}>{video.channelTitle}</Text>
         </TouchableOpacity>
         <View style={styles.metaContainer}>
-          <Text style={styles.metaText}>{formatNumber(video.viewCount)} 次觀看</Text>
-          <Text style={styles.metaText}>{timeAgo(video.publishedAt)}</Text>
+          <Text style={metaTextStyle}>{formatNumber(video.viewCount)} 次觀看</Text>
+          <Text style={metaTextStyle}>{timeAgo(video.publishedAt)}</Text>
         </View>
       </View>
     </View>
@@ -58,10 +66,16 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
+  cardShorts: {
+    width: width / 3 - 20, // 調整寬度以容納更多卡片
+  },
   thumbnailContainer: {
     width: '100%',
     aspectRatio: 16 / 9,
     backgroundColor: '#374151', // gray-700
+  },
+  thumbnailContainerShorts: {
+    aspectRatio: 9 / 16,
   },
   thumbnail: {
     width: '100%',
@@ -72,6 +86,9 @@ const styles = StyleSheet.create({
     padding: 10,
     flexGrow: 1,
   },
+  infoContainerShorts: {
+    padding: 8,
+  },
   titleLink: {
     flexGrow: 1,
   },
@@ -81,6 +98,10 @@ const styles = StyleSheet.create({
     color: '#f9fafb', // gray-100
     lineHeight: 20,
     marginBottom: 5,
+  },
+  titleShorts: {
+    fontSize: 14,
+    lineHeight: 18,
   },
   channelLink: {
     flexDirection: 'row',
@@ -94,10 +115,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#374151', // gray-700
     marginRight: 8,
   },
+  channelAvatarShorts: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+  },
   channelTitle: {
     fontSize: 12,
     color: '#9ca3af', // gray-400
     flexShrink: 1,
+  },
+  channelTitleShorts: {
+    fontSize: 10,
   },
   metaContainer: {
     flexDirection: 'row',
@@ -111,6 +140,9 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: 12,
     color: '#9ca3af', // gray-400
+  },
+  metaTextShorts: {
+    fontSize: 10,
   },
 });
 

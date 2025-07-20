@@ -21,7 +21,7 @@ import BlacklistModal from '../components/BlacklistModal'; // 導入黑名單模
 import UpdateModal from '../components/UpdateModal'; // 導入更新模態框
 // import { Video, Channel, AppState } from '../types'; // 在 JS 專案中，我們不直接導入類型
 
-const CURRENT_APP_VERSION = 'V8.0';
+const CURRENT_APP_VERSION = 'V9.0';
 const PROXY_ENDPOINT = 'https://vspo-proxy-git-main-renas-projects-c8ce958b.vercel.app'; // 再次定義以防萬一
 
 const { width } = Dimensions.get('window');
@@ -36,6 +36,7 @@ const HomeScreen = () => {
     totalVisits: 0,
     todayVisits: 0,
     activeView: 'latest', // 'latest' 或 'all'
+    activeVideoTypeFilter: 'all', // 'all', 'video', 'short'
     currentPage: 1,
     itemsPerPage: 10,
     activeMemberFilter: 'all',
@@ -74,6 +75,36 @@ const HomeScreen = () => {
     initializeApp();
   }, [initializeApp]);
 
+  // Secret Trigger Logic
+  const [secretTrigger, setSecretTrigger] = useState('');
+  useEffect(() => {
+    if (secretTrigger === 'renachi') {
+      Alert.prompt(
+        "管理員模式",
+        "請輸入密碼：",
+        [
+          {
+            text: "取消",
+            onPress: () => setSecretTrigger(''),
+            style: "cancel"
+          },
+          {
+            text: "確認",
+            onPress: (password) => {
+              const parts = password.split(',');
+              const pass = parts[0];
+              const mode = parts[1] || 'normal';
+              Alert.alert(`正在以 ${mode} 模式執行指令...`);
+              initializeApp(true, pass, mode);
+              setSecretTrigger('');
+            }
+          }
+        ],
+        "plain-text"
+      );
+    }
+  }, [secretTrigger]);
+
   // 輔助函數：格式化數字
   const formatNumber = (num) => {
     if (typeof num !== 'number') return 'N/A';
@@ -97,24 +128,30 @@ const HomeScreen = () => {
   // 篩選影片邏輯
   const visibleVideos = state.allVideos.filter(video => !state.blacklist.some(b => b.id === video.channelId));
 
-  let filteredVideos;
-  let videosForChannelList;
-
+  let baseFilteredVideos;
   if (state.activeChannelFilter) {
-    filteredVideos = visibleVideos.filter(video => video.channelId === state.activeChannelFilter.id);
+    baseFilteredVideos = visibleVideos.filter(video => video.channelId === state.activeChannelFilter.id);
   } else if (state.activeMemberFilter !== 'all') {
     const filterKeyword = state.activeMemberFilter.toLowerCase();
-    filteredVideos = visibleVideos.filter(video => {
+    baseFilteredVideos = visibleVideos.filter(video => {
       if (typeof video.searchableText !== 'string') {
         return false;
       }
       return video.searchableText.includes(filterKeyword);
     });
   } else {
-    filteredVideos = visibleVideos;
+    baseFilteredVideos = visibleVideos;
   }
 
-  videosForChannelList = filteredVideos;
+  const isClassificationAvailable = visibleVideos.length > 0 && visibleVideos.some(v => v.videoType);
+  let filteredVideos;
+  if (isClassificationAvailable && state.activeVideoTypeFilter !== 'all') {
+    filteredVideos = baseFilteredVideos.filter(v => v.videoType === state.activeVideoTypeFilter);
+  } else {
+    filteredVideos = baseFilteredVideos;
+  }
+
+  let videosForChannelList = baseFilteredVideos;
 
   // 渲染邏輯將在後續步驟中添加
   return (
@@ -122,10 +159,12 @@ const HomeScreen = () => {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView style={styles.scrollView}>
           <View style={styles.header}>
-            <Text style={styles.title}>
-              れなち的VSPO中文精華收集處
-              <Text style={styles.versionText}>{CURRENT_APP_VERSION}</Text>
-            </Text>
+            <TouchableOpacity onPress={() => setSecretTrigger(prev => prev + 'r')}>
+              <Text style={styles.title}>
+                れなち的VSPO中文精華收集處
+                <Text style={styles.versionText}>{CURRENT_APP_VERSION}</Text>
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.topBar}>
@@ -241,19 +280,41 @@ const HomeScreen = () => {
 
                   <View style={styles.videosHeader}>
                     <Text style={styles.videosTitle}>精華影片</Text>
-                    <View style={styles.tabButtons}>
-                      <TouchableOpacity
-                        style={[styles.tabBtn, state.activeView === 'latest' && styles.tabBtnActive]}
-                        onPress={() => setState(prevState => ({ ...prevState, activeView: 'latest' }))}
-                      >
-                        <Text style={styles.tabBtnText}>{width >= 1280 ? '最新12部' : '最新10部'}</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.tabBtn, state.activeView === 'all' && styles.tabBtnActive]}
-                        onPress={() => setState(prevState => ({ ...prevState, activeView: 'all', currentPage: 1 }))}
-                      >
-                        <Text style={styles.tabBtnText}>一個月內</Text>
-                      </TouchableOpacity>
+                    <View style={styles.filterControls}>
+                      <View style={styles.typeFilterButtons}>
+                        <TouchableOpacity
+                          style={[styles.typeFilterBtn, state.activeVideoTypeFilter === 'all' && styles.typeFilterBtnActive]}
+                          onPress={() => setState(prevState => ({ ...prevState, activeVideoTypeFilter: 'all', currentPage: 1 }))}
+                        >
+                          <Text style={styles.typeFilterBtnText}>全部</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.typeFilterBtn, state.activeVideoTypeFilter === 'video' && styles.typeFilterBtnActive]}
+                          onPress={() => setState(prevState => ({ ...prevState, activeVideoTypeFilter: 'video', currentPage: 1 }))}
+                        >
+                          <Text style={styles.typeFilterBtnText}>只看影片</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.typeFilterBtn, state.activeVideoTypeFilter === 'short' && styles.typeFilterBtnActive]}
+                          onPress={() => setState(prevState => ({ ...prevState, activeVideoTypeFilter: 'short', currentPage: 1 }))}
+                        >
+                          <Text style={styles.typeFilterBtnText}>只看Shorts</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <View style={styles.tabButtons}>
+                        <TouchableOpacity
+                          style={[styles.tabBtn, state.activeView === 'latest' && styles.tabBtnActive]}
+                          onPress={() => setState(prevState => ({ ...prevState, activeView: 'latest' }))}
+                        >
+                          <Text style={styles.tabBtnText}>{width >= 1280 ? '最新12部' : '最新10部'}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.tabBtn, state.activeView === 'all' && styles.tabBtnActive]}
+                          onPress={() => setState(prevState => ({ ...prevState, activeView: 'all', currentPage: 1 }))}
+                        >
+                          <Text style={styles.tabBtnText}>一個月內</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
 
@@ -261,7 +322,7 @@ const HomeScreen = () => {
                   {state.activeView === 'latest' ? (
                     <View style={styles.videoGrid}>
                       {filteredVideos.slice(0, width >= 1280 ? 12 : 10).map((video, index) => (
-                        <VideoCard key={video.id || index} video={video} />
+                        <VideoCard key={video.id || index} video={video} isShortsMode={state.activeVideoTypeFilter === 'short'} />
                       ))}
                     </View>
                   ) : (
@@ -505,6 +566,28 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#06b6d4', // cyan-400
     paddingLeft: 15,
+  },
+  filterControls: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+  },
+  typeFilterButtons: {
+    flexDirection: 'row',
+    marginBottom: 10,
+  },
+  typeFilterBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 6,
+    backgroundColor: '#374151', // gray-700
+    marginRight: 10,
+  },
+  typeFilterBtnActive: {
+    backgroundColor: '#0d9488', // teal-600
+  },
+  typeFilterBtnText: {
+    color: '#d1d5db', // gray-300
+    fontWeight: 'bold',
   },
   tabButtons: {
     flexDirection: 'row',
