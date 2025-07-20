@@ -178,7 +178,7 @@ const HomeScreen = () => {
               <Text style={styles.statText}>👀 總人次: <Text style={styles.statValue}>{formatNumber(state.totalVisits)}</Text></Text>
               <Text style={styles.statText}>☀️ 今日人次: <Text style={styles.statValue}>{formatNumber(state.todayVisits)}</Text></Text>
               {state.lastUpdated && (
-                <Text style={styles.statText}>資料時間: {state.lastUpdated.toLocaleTimeString()}</Text>
+                <Text style={styles.statText}>資料時間: {state.lastUpdated.toLocaleTimeString('en-US', { timeZone: 'Asia/Taipei' })}</Text>
               )}
             </View>
             <View style={styles.topBarActions}>
