@@ -21,6 +21,7 @@ import VideoListItem from '../components/VideoListItem';
 import ChannelGridCard from '../components/ChannelGridCard';
 import BlacklistModal from '../components/BlacklistModal'; // 導入黑名單模態框
 import UpdateModal from '../components/UpdateModal'; // 導入更新模態框
+import Notification from '../components/Notification'; // 導入通知元件
 // import { Video, Channel, AppState } from '../types'; // 在 JS 專案中，我們不直接導入類型
 
 const CURRENT_APP_VERSION = 'V9.0';
@@ -33,6 +34,7 @@ const HomeScreen = () => {
     allVideos: [],
     blacklist: [],
     isLoading: true,
+    isUpdatingInBackground: false, // 用於背景更新的狀態
     lastUpdated: null,
     apiError: null,
     totalVisits: 0,
@@ -50,29 +52,58 @@ const HomeScreen = () => {
   const [isFilterMenuVisible, setIsFilterMenuVisible] = useState(false);
   const [filterMenuPosition, setFilterMenuPosition] = useState({ top: 0, left: 0 });
   const filterButtonRef = useRef(null);
+  const notificationRef = useRef(null);
 
   const initializeApp = useCallback(async (force = false, password = '', mode = 'normal') => {
-    setState(prevState => ({ ...prevState, isLoading: true, apiError: null }));
-    try {
-      const initialBlacklist = await getBlacklist();
-      const dataPackage = await fetchAllDataFromProxy(force, password, mode);
-      setState(prevState => ({
-        ...prevState,
-        allVideos: dataPackage.videos.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)),
-        lastUpdated: new Date(dataPackage.timestamp),
-        totalVisits: dataPackage.totalVisits || 0,
-        todayVisits: dataPackage.todayVisits || 0,
-        blacklist: initialBlacklist, // 確保黑名單狀態正確
-        isLoading: false,
-      }));
-    } catch (error) {
-      console.error("初始化失敗:", error);
-      let errorMessage = error.message;
-      if (errorMessage && errorMessage.toLowerCase().includes('quota')) {
-        errorMessage = "API 每日配額已用盡";
+    // 根據是否為強制更新，決定是前景載入還是背景更新
+    if (force) {
+      setState(prevState => ({ ...prevState, isUpdatingInBackground: true }));
+
+      fetchAllDataFromProxy(force, password, mode)
+        .then(dataPackage => {
+          setState(prevState => ({
+            ...prevState,
+            allVideos: dataPackage.videos.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)),
+            lastUpdated: new Date(dataPackage.timestamp),
+            totalVisits: dataPackage.totalVisits || 0,
+            todayVisits: dataPackage.todayVisits || 0,
+            isUpdatingInBackground: false,
+          }));
+          notificationRef.current?.show('資料已成功更新！', 'success');
+        })
+        .catch(error => {
+          console.error("背景更新失敗:", error);
+          let errorMessage = error.message;
+          if (errorMessage && errorMessage.toLowerCase().includes('quota')) {
+            errorMessage = "API 每日配額已用盡";
+          }
+          notificationRef.current?.show(`更新失敗: ${errorMessage}`, 'error');
+          setState(prevState => ({ ...prevState, isUpdatingInBackground: false }));
+        });
+
+    } else {
+      // 原本的初次載入邏輯
+      setState(prevState => ({ ...prevState, isLoading: true, apiError: null }));
+      try {
+        const initialBlacklist = await getBlacklist();
+        const dataPackage = await fetchAllDataFromProxy(force, password, mode);
+        setState(prevState => ({
+          ...prevState,
+          allVideos: dataPackage.videos.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)),
+          lastUpdated: new Date(dataPackage.timestamp),
+          totalVisits: dataPackage.totalVisits || 0,
+          todayVisits: dataPackage.todayVisits || 0,
+          blacklist: initialBlacklist,
+          isLoading: false,
+        }));
+      } catch (error) {
+        console.error("初始化失敗:", error);
+        let errorMessage = error.message;
+        if (errorMessage && errorMessage.toLowerCase().includes('quota')) {
+          errorMessage = "API 每日配額已用盡";
+        }
+        setState(prevState => ({ ...prevState, apiError: errorMessage, isLoading: false }));
       }
-      setState(prevState => ({ ...prevState, apiError: errorMessage, isLoading: false }));
-      if (force) Alert.alert("錯誤", `初始化失敗: ${errorMessage}`);
     }
   }, []);
 
@@ -162,6 +193,13 @@ const HomeScreen = () => {
   return (
     <>
       <SafeAreaView style={styles.safeArea}>
+        <Notification ref={notificationRef} />
+        {state.isUpdatingInBackground && (
+          <View style={styles.updateBanner}>
+            <ActivityIndicator size="small" color="#FFFFFF" />
+            <Text style={styles.updateBannerText}>正在背景更新資料...</Text>
+          </View>
+        )}
         <ScrollView style={styles.scrollView} stickyHeaderIndices={[1]}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => setSecretTrigger(prev => prev + 'r')}>
@@ -290,8 +328,13 @@ const HomeScreen = () => {
                       <View style={styles.typeFilterContainer}>
                         <TouchableOpacity
                           ref={filterButtonRef}
-                          style={styles.typeFilterDropdownButton}
+                          style={[
+                            styles.typeFilterDropdownButton,
+                            state.isUpdatingInBackground && styles.typeFilterDropdownButtonDisabled,
+                          ]}
+                          disabled={state.isUpdatingInBackground}
                           onPress={() => {
+                            if (state.isUpdatingInBackground) return;
                             filterButtonRef.current.measure((fx, fy, width, height, px, py) => {
                               setFilterMenuPosition({ top: py + height, left: px });
                               setIsFilterMenuVisible(true);
@@ -424,6 +467,19 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#111827',
+  },
+  updateBanner: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#6366f1', // indigo-500
+    width: '100%',
+  },
+  updateBannerText: {
+    color: '#FFFFFF',
+    marginLeft: 10,
+    fontWeight: 'bold',
   },
   scrollView: {
     flex: 1,
@@ -631,6 +687,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 6,
+  },
+  typeFilterDropdownButtonDisabled: {
+    backgroundColor: '#4b5563', // gray-600
+    opacity: 0.5,
   },
   typeFilterDropdownButtonText: {
     color: '#d1d5db', // gray-300
